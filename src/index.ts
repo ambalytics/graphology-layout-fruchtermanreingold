@@ -93,21 +93,24 @@ function genericFruchtermanReingoldLayout(
     const attractiveForces = graph.edges().reduce((prev, edgeKey) => {
       const v = graph.source(edgeKey);
       const u = graph.target(edgeKey);
+      const weight: number = graph.getEdgeAttribute(edgeKey, 'weight') || 1;
 
       const vPos = positions[v];
       const uPos = positions[u];
 
       const diff = { x: vPos.x - uPos.x, y: vPos.y - vPos.y };
       const diffLength = Math.sqrt(Math.pow(diff.x, 2) + Math.pow(diff.y, 2));
+      
+      const force = attractiveForce(diffLength) * weight;
 
       const vDisp = {
-        x: prev[v].x - (diff.x / diffLength) * attractiveForce(diffLength),
-        y: prev[v].y - (diff.y / diffLength) * attractiveForce(diffLength),
+        x: prev[v].x - (diff.x / diffLength) * force,
+        y: prev[v].y - (diff.y / diffLength) * force,
       };
 
       const uDisp = {
-        x: prev[u].x + (diff.x / diffLength) * attractiveForce(diffLength),
-        y: prev[u].y + (diff.y / diffLength) * attractiveForce(diffLength),
+        x: prev[u].x + (diff.x / diffLength) * force,
+        y: prev[u].y + (diff.y / diffLength) * force,
       };
 
       return {
