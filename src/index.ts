@@ -3,14 +3,8 @@ import { isGraph } from 'graphology-utils';
 
 type LayoutMapping = { [key: string]: { x: number; y: number } };
 
-export interface FruchtermanReingoldSettings {
-  // TODO Any needed setting
-}
-
 export type FruchtermanReingoldLayoutOptions = {
-  // TODO fruchterman reingold options
   iterations: number;
-  settings?: FruchtermanReingoldSettings;
 };
 
 interface IFruchtermanReingoldLayout {
@@ -43,12 +37,12 @@ function genericFruchtermanReingoldLayout(
 
   const nodes = graph.nodes();
 
-  const W = 1,
-    L = 1; // { W and L are the width and length of the frame }
+  const W = 1.0,
+    L = 1.0; // { W and L are the width and length of the frame }
   const A = W * L;
   const k = Math.sqrt(A / nodes.length);
-  let t = 1; // TODO better value??
-  const cool = (t: number) => t - 0.1; // TODO better cooling function
+  let t = 0.1;
+  const cool = (t: number) => t / (iterations + 1.0); // ? maybe better cooling function eg quenching and simmering
 
   const attractiveForce = (x: number) => Math.pow(x, 2) / k;
   const repulsiveForce = (z: number) => Math.pow(k, 2) / z;
