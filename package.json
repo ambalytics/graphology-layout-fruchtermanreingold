@@ -5,12 +5,18 @@
   "main": "dist/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc"
+    "build": "rimraf dist && tsc",
+    "prepublish": "npm run build"
   },
   "author": "Matthias Hecht",
   "license": "MIT",
   "devDependencies": {
+    "graphology": "^0.19.3",
+    "graphology-generators": "^0.11.0",
+    "graphology-layout": "^0.4.0",
     "graphology-types": "^0.19.2",
+    "rimraf": "^3.0.2",
+    "ts-node": "^10.0.0",
     "typescript": "^4.3.2"
   },
   "dependencies": {

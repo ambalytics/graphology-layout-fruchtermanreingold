@@ -3,8 +3,19 @@ import { isGraph } from 'graphology-utils';
 
 type LayoutMapping = { [key: string]: { x: number; y: number } };
 
-export type FruchtermanReingoldLayoutOptions = {
-  iterations: number;
+
+/**
+ * Available options for fruchterman reingold.
+ * 
+ * @property {number=10} iterations
+ * @property {number=1} edgeWeightInfluence
+ *
+ * @export
+ * @interface FruchtermanReingoldLayoutOptions
+ */
+export interface FruchtermanReingoldLayoutOptions {
+  iterations?: number;
+  edgeWeightInfluence?: number
 };
 
 interface IFruchtermanReingoldLayout {
@@ -16,12 +27,12 @@ function genericFruchtermanReingoldLayout(
   assign: false,
   graph: Graph,
   options?: FruchtermanReingoldLayoutOptions
-): LayoutMapping
+): LayoutMapping;
 function genericFruchtermanReingoldLayout(
   assign: true,
   graph: Graph,
   options?: FruchtermanReingoldLayoutOptions
-): void
+): void;
 function genericFruchtermanReingoldLayout(
   assign: boolean,
   graph: Graph,
@@ -34,106 +45,108 @@ function genericFruchtermanReingoldLayout(
   }
 
   const iterations = options?.iterations || 10;
+  const edgeWeightInfluence = options?.edgeWeightInfluence || 1;
 
   const nodes = graph.nodes();
 
-  const W = 1.0,
-    L = 1.0; // { W and L are the width and length of the frame }
-  const A = W * L;
-  const k = Math.sqrt(A / nodes.length);
-  let t = 0.1;
+  const w = 1.0;
+  const l = 1.0;
+  const area = w * l;
+  const k = Math.sqrt(area / nodes.length);
+  
+  const calculateAttractiveForce = (d: number) => (d * d) / k;
+  const calculateRepulsiveForce = (d: number) => - (k * k) / d;
+
+  const positions = nodes.reduce(
+    (prev, nodeKey) => ({
+      ...prev,
+      [nodeKey]: {
+        x: graph.getNodeAttribute(nodeKey, 'x'),
+        y: graph.getNodeAttribute(nodeKey, 'y'),
+      },
+    }),
+    {} as LayoutMapping
+  );
+
+  let t = w / 10.0;
   const cool = (t: number) => t / (iterations + 1.0); // ? maybe better cooling function eg quenching and simmering
 
-  const attractiveForce = (x: number) => Math.pow(x, 2) / k;
-  const repulsiveForce = (z: number) => Math.pow(k, 2) / z;
-
-  let positions = nodes.reduce((prev, nodeKey) => ({
-    ...prev,
-    [nodeKey]: {
-      x: graph.getNodeAttribute(nodeKey, 'x'),
-      y: graph.getNodeAttribute(nodeKey, 'y'),
-    },
-  }), {} as LayoutMapping );
-
   for (let i = 0; i < iterations; i++) {
-    // { calculate repulsive forces}
-    const repulsiveForces = Object.entries(positions).reduce((prev, [vKey, vPos]) => {
-      const force = Object.entries(positions).reduce(
-        (disp, [uKey, uPos]) => {
-          if ( vKey === uKey ) {
-            return disp;
-          }
-          
-          const diff = { x: vPos.x - uPos.x, y: vPos.y - uPos.y };
-          const diffLength = Math.sqrt(
-            Math.pow(diff.x, 2) + Math.pow(diff.y, 2)
-          );
+    const repulsiveForces = Object.keys(positions).reduce((prev, vKey) => {
+      const force = Object.keys(positions).reduce(
+        (disp, uKey) => {
+          if (vKey !== uKey) {
+            const dx = positions[vKey].x - positions[uKey].x;
+            const dy = positions[vKey].y - positions[uKey].y;
 
-          return {
-            x: disp.x + (diff.x / diffLength) * repulsiveForce(diffLength),
-            y: disp.y + (diff.y / diffLength) * repulsiveForce(diffLength),
-          };
+            const delta = Math.sqrt(dx * dx + dy * dy);
+
+            if (delta !== 0) {
+              const ddx = dx / delta;
+              const ddy = dy / delta;
+              const f = calculateRepulsiveForce(delta) / delta;
+
+              return {
+                x: disp.x + ddx * f,
+                y: disp.y + ddy * f,
+              };
+            }
+          }
+          return disp;
         },
         { x: 0, y: 0 }
       );
-
       return {
         ...prev,
         [vKey]: force,
       };
     }, {} as LayoutMapping);
 
-    // { calculate attractive forces }
     const attractiveForces = graph.edges().reduce((prev, edgeKey) => {
-      const v = graph.source(edgeKey);
-      const u = graph.target(edgeKey);
+      const vKey = graph.source(edgeKey);
+      const uKey = graph.target(edgeKey);
       const weight: number = graph.getEdgeAttribute(edgeKey, 'weight') || 1;
 
-      const vPos = positions[v];
-      const uPos = positions[u];
+      const dx = positions[vKey].x - positions[uKey].x;
+      const dy = positions[vKey].y - positions[uKey].y;
+      const delta = Math.sqrt(dx * dx + dy * dy);
 
-      const diff = { x: vPos.x - uPos.x, y: vPos.y - vPos.y };
-      const diffLength = Math.sqrt(Math.pow(diff.x, 2) + Math.pow(diff.y, 2));
-      
-      const force = attractiveForce(diffLength) * weight;
+      if (delta !== 0) {
+        const ddx = dx / delta;
+        const ddy = dy / delta;
+        const f = calculateAttractiveForce(delta) * Math.pow(weight, edgeWeightInfluence);
 
-      const vDisp = {
-        x: prev[v].x - (diff.x / diffLength) * force,
-        y: prev[v].y - (diff.y / diffLength) * force,
-      };
-
-      const uDisp = {
-        x: prev[u].x + (diff.x / diffLength) * force,
-        y: prev[u].y + (diff.y / diffLength) * force,
-      };
-
-      return {
-        ...prev,
-        [v]: vDisp,
-        [u]: uDisp,
-      };
+        return {
+          ...prev,
+          [vKey]: {
+            x: prev[vKey].x - ddx * f,
+            y: prev[vKey].y - ddy * f,
+          },
+          [uKey]: {
+            x: prev[uKey].x + ddx * f,
+            y: prev[uKey].y + ddy * f,
+          },
+        };
+      }
+      return prev;
     }, repulsiveForces);
 
-    // { limit the maximum displacement to the temperature t }
-    // { and then prevent from being displaced outside frame}
-    positions = Object.entries(positions).reduce((prev, [vKey, prevPos]) => {
-      const force = attractiveForces[vKey];
-      const forceLength = Math.sqrt(
-        Math.pow(force.x, 2) + Math.pow(force.y, 2)
-      );
+    Object.keys(positions).forEach((vKey) => {
+      const dx = attractiveForces[vKey].x;
+      const dy = attractiveForces[vKey].y;
 
-      const pos = {
-        x: prevPos.x + (force.x / forceLength) * Math.min(force.x, t),
-        y: prevPos.y + (force.y / forceLength) * Math.min(force.y, t),
-      };
-      pos.x = Math.min(W / 2.0, Math.max(-W / 2.0, pos.x));
-      pos.y = Math.min(L / 2.0, Math.max(-L / 2.0, pos.y));
+      const disp = Math.sqrt(dx * dx + dy * dy);
 
-      return {
-        ...prev,
-        [vKey]: pos,
-      };
-    }, {} as LayoutMapping);
+      if (disp !== 0) {
+        const x = positions[vKey].x + (dx / disp) * Math.min(dx, t);
+        const y = positions[vKey].y + (dy / disp) * Math.min(dy, t);
+
+        positions[vKey] = {
+          x: Math.min(w / 2, Math.max(-w / 2, x)),
+          y: Math.min(l / 2, Math.max(-l / 2, y)),
+        };
+      }
+    });
 
     t = cool(t);
   }
@@ -145,7 +158,13 @@ function genericFruchtermanReingoldLayout(
   return positions;
 }
 
-const fruchtermanReingoldLayout: IFruchtermanReingoldLayout = (graph: Graph, options?: FruchtermanReingoldLayoutOptions) => genericFruchtermanReingoldLayout(false, graph, options);
-fruchtermanReingoldLayout.assign = (graph: Graph, options?: FruchtermanReingoldLayoutOptions) => genericFruchtermanReingoldLayout(true, graph, options);
+const fruchtermanReingoldLayout: IFruchtermanReingoldLayout = (
+  graph: Graph,
+  options?: FruchtermanReingoldLayoutOptions
+) => genericFruchtermanReingoldLayout(false, graph, options);
+fruchtermanReingoldLayout.assign = (
+  graph: Graph,
+  options?: FruchtermanReingoldLayoutOptions
+) => genericFruchtermanReingoldLayout(true, graph, options);
 
 export default fruchtermanReingoldLayout;
