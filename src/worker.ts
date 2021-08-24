@@ -41,8 +41,10 @@ function genericFruchtermanReingoldLayout(
     }
 
     const parsedOptions = parseOptions(options || {});
-    const [nodes, edges] = parseGraph(graph, parsedOptions.weightAttribute);
-
+    const [EdgeMatrix, order, parseLayout] = parseGraph(
+      graph,
+      parsedOptions.weightAttribute
+    );
     const xURL = window.URL || window.webkitURL;
 
     // Get code for worker and insert fruchtermanReingoldImpl
@@ -66,7 +68,7 @@ function genericFruchtermanReingoldLayout(
             graph.updateEachNodeAttributes(
               (nodeKey, attr) => ({
                 ...attr,
-                ...positions[nodeKey],
+                ...parseLayout(new Float32Array(positions))[nodeKey],
               }),
               { attributes: ['x', 'y'] }
             );
@@ -75,21 +77,24 @@ function genericFruchtermanReingoldLayout(
         }
         case MessageType.FINISHED: {
           const positions = event.data.data;
-          resolve(positions);
+          resolve(parseLayout(new Float32Array(positions)));
           worker.terminate();
           break;
         }
       }
     });
 
-    worker.postMessage({
-      action: WorkerAction.DATA,
-      data: {
-        nodes,
-        edges,
-        options: parsedOptions,
-      },
-    } as ClientMessage);
+    worker.postMessage(
+      {
+        action: WorkerAction.DATA,
+        data: {
+          order,
+          EdgeMatrix: EdgeMatrix.buffer,
+          options: parsedOptions,
+        },
+      } as ClientMessage,
+      [EdgeMatrix.buffer]
+    );
   });
 }
 

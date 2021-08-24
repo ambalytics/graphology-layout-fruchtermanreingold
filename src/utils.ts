@@ -61,18 +61,32 @@ export const parseOptions = (
 export const parseGraph = (
   graph: Graph,
   weightAttribute = 'weight'
-): [string[], EdgeMapping] => {
-  const nodes = graph.nodes();
-  const edges = graph.edges().reduce(
-    (prev, edge) => ({
-      ...prev,
-      [edge]: {
-        source: graph.source(edge),
-        target: graph.target(edge),
-        weigth: graph.getEdgeAttribute(edge, weightAttribute),
-      },
-    }),
-    {} as EdgeMapping
-  );
-  return [nodes, edges];
+): [Float32Array, number, (NodeMatrix: Float32Array) => LayoutMapping] => {
+  const nodeIndex = graph.nodes();
+  const edges = graph.edges();
+  const EdgeMatrix = graph.edges().reduce((prev, edge, i) => {
+    const baseIndex = i * 3;
+
+    prev[baseIndex + 0] = nodeIndex.indexOf(graph.source(edge));
+    prev[baseIndex + 1] = nodeIndex.indexOf(graph.target(edge));
+    prev[baseIndex + 2] = graph.getEdgeAttribute(edge, weightAttribute) || 1;
+
+    return prev;
+  }, new Float32Array(edges.length * 3));
+
+  const parseLayout = (NodeMatrix: Float32Array): LayoutMapping => {
+    return nodeIndex.reduce((prev, cur, i) => {
+      const baseIndex = i * 2;
+
+      return {
+        ...prev,
+        [cur]: {
+          x: NodeMatrix[baseIndex + 0],
+          y: NodeMatrix[baseIndex + 1],
+        },
+      };
+    }, {} as LayoutMapping);
+  };
+
+  return [EdgeMatrix, nodeIndex.length, parseLayout];
 };
