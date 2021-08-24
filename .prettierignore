@@ -11,3 +11,4 @@ dist
 webpack.config*.js
 
 tsconfig.json
+.eslint*
