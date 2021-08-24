@@ -4,7 +4,6 @@
   "description": "Fruchterman Reingold layout algorithm for graphology.",
   "main": "index.js",
   "scripts": {
-    "prepublish": "npm run build",
     "lint": "eslint .",
     "prettier:check": "prettier --check .",
     "prettier:write": "prettier --write .",
