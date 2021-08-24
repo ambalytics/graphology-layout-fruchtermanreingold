@@ -1,13 +1,13 @@
 import {
   EdgeMapping,
-  FruchtermanReingoldLayoutOptions,
+  FruchtermanReingoldLayoutBaseOptions,
   LayoutMapping,
 } from './utils';
 
 export function fruchtermanReingoldImpl(
   nodes: string[],
   edges: EdgeMapping,
-  options: FruchtermanReingoldLayoutOptions,
+  options: FruchtermanReingoldLayoutBaseOptions,
   cb?: (layout: LayoutMapping, i: number) => void
 ): LayoutMapping {
   /**
@@ -19,8 +19,8 @@ export function fruchtermanReingoldImpl(
   const lengthVector = (v: number[]): number =>
     Math.sqrt(v.reduce((prev, cur) => prev + cur * cur, 0));
 
-  const w = nodes.length; // { W and L are the width and length of the frame }
-  const l = nodes.length;
+  const w = 1; // { W and L are the width and length of the frame }
+  const l = 1;
 
   const area = w * l;
   const k = options.C * Math.sqrt(area / nodes.length);

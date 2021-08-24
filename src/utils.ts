@@ -9,16 +9,28 @@ export type EdgeMapping = {
 /**
  * Available options for fruchterman reingold.
  *
+ * @property {string="weight"} weightAttribute
+ * @export
+ * @interface FruchtermanReingoldLayoutOptions
+ * @extends {FruchtermanReingoldLayoutBaseOptions}
+ */
+export interface FruchtermanReingoldLayoutOptions
+  extends FruchtermanReingoldLayoutBaseOptions {
+  weightAttribute?: string;
+}
+
+/**
+ * Available base options for fruchterman reingold.
+ *
  * @property {number=10} iterations
  * @property {number=1} edgeWeightInfluence
  * @property {number=1} speed
  * @property {number=10} gravity
  * @property {number=1} C
  *
- * @export
- * @interface FruchtermanReingoldLayoutOptions
+ * @interface FruchtermanReingoldLayoutBaseOptions
  */
-export interface FruchtermanReingoldLayoutOptions {
+export interface FruchtermanReingoldLayoutBaseOptions {
   iterations: number;
   edgeWeightInfluence: number;
   speed: number;
@@ -34,6 +46,7 @@ export const parseOptions = (
   const C = options?.C || 1;
   const speed = options?.speed || 1;
   const gravity = options?.gravity || 10;
+  const weightAttribute = options?.weightAttribute;
 
   return {
     iterations,
@@ -41,10 +54,14 @@ export const parseOptions = (
     C,
     speed,
     gravity,
+    weightAttribute,
   };
 };
 
-export const parseGraph = (graph: Graph): [string[], EdgeMapping] => {
+export const parseGraph = (
+  graph: Graph,
+  weightAttribute: string = 'weight'
+): [string[], EdgeMapping] => {
   const nodes = graph.nodes();
   const edges = graph.edges().reduce(
     (prev, edge) => ({
@@ -52,7 +69,7 @@ export const parseGraph = (graph: Graph): [string[], EdgeMapping] => {
       [edge]: {
         source: graph.source(edge),
         target: graph.target(edge),
-        weigth: graph.getEdgeAttribute(edge, 'weight'),
+        weigth: graph.getEdgeAttribute(edge, weightAttribute),
       },
     }),
     {} as EdgeMapping

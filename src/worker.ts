@@ -41,7 +41,7 @@ function genericFruchtermanReingoldLayout(
     }
 
     const parsedOptions = parseOptions(options || {});
-    const [nodes, edges] = parseGraph(graph);
+    const [nodes, edges] = parseGraph(graph, parsedOptions.weightAttribute);
 
     const xURL = window.URL || window.webkitURL;
 
