@@ -1,8 +1,4 @@
-import {
-  EdgeMapping,
-  FruchtermanReingoldLayoutOptions,
-  LayoutMapping,
-} from './utils';
+import { FruchtermanReingoldLayoutOptions } from './utils';
 import { fruchtermanReingoldImpl as origImpl } from './fruchterman-reingold';
 import './fruchterman-reingold';
 
@@ -17,8 +13,8 @@ export enum WorkerAction {
 export interface ClientDataMessage {
   action: WorkerAction.DATA;
   data: {
-    nodes: string[];
-    edges: EdgeMapping;
+    order: number;
+    EdgeMatrix: ArrayBuffer;
     options: FruchtermanReingoldLayoutOptions;
   };
 }
@@ -40,7 +36,7 @@ export interface WorkerErrorMessage {
 export interface WorkerDataMessage {
   type: MessageType.DATA;
   data: {
-    positions: LayoutMapping;
+    positions: ArrayBuffer;
     i: number;
   };
 }
@@ -51,7 +47,7 @@ export interface WorkerRunningMessage {
 
 export interface WorkerFinishedMessage {
   type: MessageType.FINISHED;
-  data: LayoutMapping;
+  data: ArrayBuffer;
 }
 
 export type WorkerMessage =
@@ -80,26 +76,36 @@ export function workerFn(): void {
         type: 'RUNNING',
       } as WorkerMessage);
 
-      const { nodes, edges, options } = event.data.data;
+      const { order, EdgeMatrix, options } = event.data.data;
 
       const positions = fruchtermanReingoldImpl(
-        nodes,
-        edges,
+        order,
+        new Float32Array(EdgeMatrix),
         options,
-        (layout, i) =>
-          ctx.postMessage({
-            type: 'DATA',
-            data: {
-              positions: layout,
-              i,
-            },
-          } as WorkerMessage)
+        (layout, i) => {
+          // posting an transferable object (FLoar32Array.buffer) will transfer the ownership...
+          // the object is unusable for the worker afterwards... As the algorithm has to use the array again we have to send a copy
+          const positions = layout.slice();
+          ctx.postMessage(
+            {
+              type: 'DATA',
+              data: {
+                positions: positions.buffer,
+                i,
+              },
+            } as WorkerMessage,
+            [positions.buffer]
+          );
+        }
       );
 
-      ctx.postMessage({
-        type: 'FINISHED',
-        data: positions,
-      } as WorkerMessage);
+      ctx.postMessage(
+        {
+          type: 'FINISHED',
+          data: positions.buffer,
+        } as WorkerMessage,
+        [positions.buffer]
+      );
 
       ctx.terminate();
     }

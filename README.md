@@ -43,7 +43,7 @@ npm install @ambalytics/graphology-layout-fruchtermanreingold
 ### Synchronous layout
 
 ```js
-import fruchtermanReingold from 'graphology-layout-fruchtermanreingold';
+import fruchtermanReingold from '@ambalytics/graphology-layout-fruchtermanreingold';
 
 const positions = fruchtermanReingold(graph);
 
@@ -71,5 +71,5 @@ In this case the return values will be wrapped in a Promise.
 To use the webworker you have to change the import statement to:
 
 ```js
-import fruchtermanReingold from 'graphology-layout-fruchtermanreingold/worker';
+import fruchtermanReingold from '@ambalytics/graphology-layout-fruchtermanreingold/worker';
 ```

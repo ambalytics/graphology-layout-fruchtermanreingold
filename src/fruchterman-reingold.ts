@@ -1,15 +1,11 @@
-import {
-  EdgeMapping,
-  FruchtermanReingoldLayoutBaseOptions,
-  LayoutMapping,
-} from './utils';
+import { FruchtermanReingoldLayoutBaseOptions } from './utils';
 
 export function fruchtermanReingoldImpl(
-  nodes: string[],
-  edges: EdgeMapping,
+  order: number,
+  EdgeMatrix: Float32Array,
   options: FruchtermanReingoldLayoutBaseOptions,
-  cb?: (layout: LayoutMapping, i: number) => void
-): LayoutMapping {
+  cb?: (layout: Float32Array, i: number) => void
+): Float32Array {
   /**
    * Calculate the length of a vector with arbitrary dimensions.
    *
@@ -23,59 +19,63 @@ export function fruchtermanReingoldImpl(
   const l = 1;
 
   const area = w * l;
-  const k = options.C * Math.sqrt(area / nodes.length);
+  const k = options.C * Math.sqrt(area / order);
 
   const fa = (d: number) => (d * d) / k;
   const fr = (d: number) => (k * k) / d;
 
-  const positions = nodes.reduce((prev, nodeKey) => {
-    prev[nodeKey] = {
-      x: (Math.random() * w - w / 2) / 2,
-      y: (Math.random() * l - l / 2) / 2,
-    };
-    return prev;
-  }, {} as LayoutMapping);
+  const positions = new Float32Array(order * 2).map((_, i) =>
+    i % 2 === 0
+      ? (Math.random() * w - w / 2) / 2
+      : (Math.random() * l - l / 2) / 2
+  );
 
   let t = w / 10.0;
   const cool = (t: number) => t / (options.iterations + 1.0); // ? maybe better cooling function eg quenching and simmering
 
   for (let i = 0; i < options.iterations; i++) {
+    const displacements = [] as number[][];
+
     // { calculate repulsive forces }
-    const repulsiveDisplacements = Object.keys(positions).reduce((prev, v) => {
-      const vPos = positions[v];
-      const displacement = Object.keys(positions).reduce(
-        (disp, u) => {
-          const uPos = positions[u];
-          if (v !== u) {
-            const d = [vPos.x - uPos.x, vPos.y - uPos.y];
+    for (let v = 0; v < order; v++) {
+      const vBaseIndex = v * 2;
+      const vPos = [positions[vBaseIndex + 0], positions[vBaseIndex + 1]];
+      displacements[v] = [0, 0];
 
-            const delta = lengthVector(d);
+      for (let u = 0; u < order; u++) {
+        const uBaseIndex = v * 2;
+        const uPos = [positions[uBaseIndex + 0], positions[uBaseIndex + 1]];
 
-            // Nodes that are far apart (1000 * k) are not worth computing
-            if (delta !== 0 || delta > 1000 * k) {
-              const force = fr(delta);
+        if (v !== u) {
+          const d = [vPos[0] - uPos[0], vPos[1] - uPos[1]];
 
-              disp.x += (d[0] / delta) * force;
-              disp.y += (d[1] / delta) * force;
-            }
+          const delta = lengthVector(d);
+
+          // Nodes that are far apart (1000 * k) are not worth computing
+          if (delta !== 0 || delta > 1000 * k) {
+            const force = fr(delta);
+
+            displacements[v][0] += (d[0] / delta) * force;
+            displacements[v][1] += (d[1] / delta) * force;
           }
-          return disp;
-        },
-        { x: 0, y: 0 }
-      );
-      prev[v] = displacement;
-      return prev;
-    }, {} as LayoutMapping);
+        }
+      }
+    }
 
     // { calculate attractive forces }
-    const attractiveDisplacements = Object.keys(edges).reduce((prev, edge) => {
-      const { source, target } = edges[edge];
-      const weight = edges[edge].weigth || 1;
+    for (let e = 0; e < EdgeMatrix.length / 3; e++) {
+      const baseIndex = e * 3;
+      const source = EdgeMatrix[baseIndex + 0];
+      const sourceBaseIndex = source * 2;
+      const target = EdgeMatrix[baseIndex + 1];
+      const targetBaseIndex = target * 2;
+      const weight = EdgeMatrix[baseIndex + 2];
 
       const d = [
-        positions[source].x - positions[target].x,
-        positions[source].y - positions[target].y,
+        positions[sourceBaseIndex + 0] - positions[targetBaseIndex + 0],
+        positions[sourceBaseIndex + 1] - positions[targetBaseIndex + 1],
       ];
+
       const delta = lengthVector(d);
 
       // Nodes that are far apart (1000 * k) are not worth computing
@@ -83,26 +83,26 @@ export function fruchtermanReingoldImpl(
         const force = fa(delta);
         const scaleByWeight = Math.pow(weight, options.edgeWeightInfluence);
 
-        prev[source].x -= (d[0] / delta) * force * scaleByWeight;
-        prev[source].y -= (d[1] / delta) * force * scaleByWeight;
-        prev[target].x += (d[0] / delta) * force * scaleByWeight;
-        prev[target].y += (d[1] / delta) * force * scaleByWeight;
+        displacements[source][0] -= (d[0] / delta) * force * scaleByWeight;
+        displacements[source][1] -= (d[1] / delta) * force * scaleByWeight;
+        displacements[target][0] += (d[0] / delta) * force * scaleByWeight;
+        displacements[target][1] += (d[1] / delta) * force * scaleByWeight;
       }
-      return prev;
-    }, repulsiveDisplacements);
+    }
 
     // { limit the maximum displacement to the temperature t }
     // { and then prevent from being displaced outside frame }
     // Also apply some gravity and speed (not standard furchterman reingold)
-    Object.keys(positions).forEach((v) => {
-      const vPos = positions[v];
-      const d = [attractiveDisplacements[v].x, attractiveDisplacements[v].y];
+    for (let v = 0; v < order; v++) {
+      const vBaseIndex = v * 2;
+      const vPos = [positions[vBaseIndex + 0], positions[vBaseIndex + 1]];
+      const d = displacements[v];
 
       // Gravity
-      const diffFromCenter = lengthVector([vPos.x, vPos.y]);
+      const diffFromCenter = lengthVector(vPos);
       const gravityForce = 0.01 * k * options.gravity * diffFromCenter;
-      d[0] -= (gravityForce * vPos.x) / diffFromCenter;
-      d[1] -= (gravityForce * vPos.y) / diffFromCenter;
+      d[0] -= (gravityForce * vPos[0]) / diffFromCenter;
+      d[1] -= (gravityForce * vPos[1]) / diffFromCenter;
 
       // Speed
       d[0] *= options.speed;
@@ -115,14 +115,14 @@ export function fruchtermanReingoldImpl(
         const maxDisplacement = Math.min(delta, t * options.speed);
 
         // Apply displacement
-        const x = vPos.x + (d[0] / delta) * maxDisplacement;
-        const y = vPos.y + (d[1] / delta) * maxDisplacement;
+        const x = vPos[0] + (d[0] / delta) * maxDisplacement;
+        const y = vPos[1] + (d[1] / delta) * maxDisplacement;
 
         // prevent from being displaced outside frame
-        positions[v].x = Math.min(w / 2, Math.max(-w / 2, x));
-        positions[v].y = Math.min(l / 2, Math.max(-l / 2, y));
+        positions[vBaseIndex + 0] = Math.min(w / 2, Math.max(-w / 2, x));
+        positions[vBaseIndex + 1] = Math.min(l / 2, Math.max(-l / 2, y));
       }
-    });
+    }
 
     t = cool(t);
 

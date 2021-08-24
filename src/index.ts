@@ -41,14 +41,17 @@ function genericFruchtermanReingoldLayout(
   }
 
   const parsedOptions = parseOptions(options || {});
-  const [nodes, edges] = parseGraph(graph, parsedOptions.weightAttribute);
+  const [EdgeMatrix, order, parseLayout] = parseGraph(
+    graph,
+    parsedOptions.weightAttribute
+  );
 
   const updateCb = assign
-    ? (layout: LayoutMapping) => {
+    ? (layout: Float32Array) => {
         graph.updateEachNodeAttributes(
           (nodeKey, attr) => ({
             ...attr,
-            ...layout[nodeKey],
+            ...parseLayout(layout)[nodeKey],
           }),
           { attributes: ['x', 'y'] }
         );
@@ -56,13 +59,13 @@ function genericFruchtermanReingoldLayout(
     : undefined;
 
   const positions = fruchtermanReingoldImpl(
-    nodes,
-    edges,
+    order,
+    EdgeMatrix,
     parsedOptions,
     updateCb
   );
 
-  if (!assign) return positions;
+  if (!assign) return parseLayout(positions);
 }
 
 const fruchtermanReingoldLayout: IFruchtermanReingoldLayout = (
