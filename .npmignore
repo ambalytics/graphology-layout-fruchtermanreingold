@@ -1,2 +1,13 @@
-tmp
+.eslintignore
+.eslintrc
+.git
+.gitignore
+.npmignore
+.prettierignore
+.prettierrc
 dist
+package-lock.json
+package.json
+src
+tmp
+tsconfig.json

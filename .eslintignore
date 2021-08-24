@@ -1,0 +1,13 @@
+# exclude the node_modules folder
+node_modules
+
+# exclude builds
+dist
+
+# ide
+.vscode
+
+# webpack
+webpack.config*.js
+
+tsconfig.json

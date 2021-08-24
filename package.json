@@ -2,24 +2,40 @@
   "name": "graphology-layout-fruchtermanreingold",
   "version": "1.0.0",
   "description": "Fruchterman Reingold layout algorithm for graphology.",
-  "main": "dist/index.js",
+  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "rimraf dist && tsc",
-    "prepublish": "npm run build"
+    "prepublish": "npm run build",
+    "lint": "eslint .",
+    "prettier:check": "prettier --check .",
+    "prettier:write": "prettier --write .",
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "clean": "rm *js *.d.ts"
   },
   "author": "Matthias Hecht",
   "license": "MIT",
   "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^4.29.2",
+    "cz-conventional-changelog": "^3.3.0",
+    "eslint": "^7.32.0",
+    "eslint-config-prettier": "^8.3.0",
     "graphology": "^0.19.3",
     "graphology-generators": "^0.11.0",
     "graphology-layout": "^0.4.0",
     "graphology-types": "^0.19.2",
-    "rimraf": "^3.0.2",
-    "ts-node": "^10.0.0",
-    "typescript": "^4.3.2"
+    "prettier": "^2.3.2",
+    "typescript": "^4.3.5"
   },
   "dependencies": {
     "graphology-utils": "^2.1.0"
+  },
+  "peerDependencies": {
+    "graphology": "*"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
   }
 }
