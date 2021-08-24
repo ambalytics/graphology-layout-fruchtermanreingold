@@ -4,7 +4,7 @@ Implementation of the Fruchterman Reingold algorithm for Javascript and [graphol
 
 This implementation is based on the original algorithm published in 1991 (referenced below). I made several small additions:
 
-- While calculating the forces of a node the implementation skips nodes that are far away (1000 * k). These nodes have a small (negligible) influence on the force.
+- While calculating the forces of a node the implementation skips nodes that are far away (1000 \* k). These nodes have a small (negligible) influence on the force.
 - The attractive force are scaled by the link weight.
 - The implementation supports a gravity forced directed to the center.
 - The forces can be scaled by a speed setting.

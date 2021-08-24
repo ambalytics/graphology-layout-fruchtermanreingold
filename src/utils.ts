@@ -60,7 +60,7 @@ export const parseOptions = (
 
 export const parseGraph = (
   graph: Graph,
-  weightAttribute: string = 'weight'
+  weightAttribute = 'weight'
 ): [string[], EdgeMapping] => {
   const nodes = graph.nodes();
   const edges = graph.edges().reduce(
