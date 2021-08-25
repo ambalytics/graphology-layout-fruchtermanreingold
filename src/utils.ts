@@ -16,7 +16,7 @@ export type EdgeMapping = {
  */
 export interface FruchtermanReingoldLayoutOptions
   extends FruchtermanReingoldLayoutBaseOptions {
-  weightAttribute?: string;
+  weightAttribute: string;
 }
 
 /**
@@ -27,6 +27,7 @@ export interface FruchtermanReingoldLayoutOptions
  * @property {number=1} speed
  * @property {number=10} gravity
  * @property {number=1} C
+ * @property {number=0} skipUpdates skip x updates before dispatching the next update
  *
  * @interface FruchtermanReingoldLayoutBaseOptions
  */
@@ -36,17 +37,18 @@ export interface FruchtermanReingoldLayoutBaseOptions {
   speed: number;
   gravity: number;
   C: number;
+  skipUpdates: number;
 }
 
 export const parseOptions = (
   options: Partial<FruchtermanReingoldLayoutOptions>
-): FruchtermanReingoldLayoutOptions => {
+): FruchtermanReingoldLayoutBaseOptions => {
   const iterations = options?.iterations || 10;
   const edgeWeightInfluence = options?.edgeWeightInfluence || 1;
   const C = options?.C || 1;
   const speed = options?.speed || 1;
   const gravity = options?.gravity || 10;
-  const weightAttribute = options?.weightAttribute;
+  const skipUpdates = options?.skipUpdates || 0;
 
   return {
     iterations,
@@ -54,7 +56,7 @@ export const parseOptions = (
     C,
     speed,
     gravity,
-    weightAttribute,
+    skipUpdates,
   };
 };
 

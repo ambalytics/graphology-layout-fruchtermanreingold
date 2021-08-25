@@ -43,7 +43,7 @@ function genericFruchtermanReingoldLayout(
     const parsedOptions = parseOptions(options || {});
     const [EdgeMatrix, order, parseLayout] = parseGraph(
       graph,
-      parsedOptions.weightAttribute
+      options?.weightAttribute
     );
     const xURL = window.URL || window.webkitURL;
 
@@ -63,8 +63,8 @@ function genericFruchtermanReingoldLayout(
     worker.addEventListener('message', (event: MessageEvent<WorkerMessage>) => {
       switch (event.data.type) {
         case MessageType.DATA: {
+          const { positions } = event.data.data;
           if (assign) {
-            const positions = event.data.data.positions;
             graph.updateEachNodeAttributes(
               (nodeKey, attr) => ({
                 ...attr,
@@ -89,6 +89,7 @@ function genericFruchtermanReingoldLayout(
         action: WorkerAction.DATA,
         data: {
           order,
+          assign,
           EdgeMatrix: EdgeMatrix.buffer,
           options: parsedOptions,
         },
