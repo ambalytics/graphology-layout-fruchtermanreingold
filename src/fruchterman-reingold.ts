@@ -126,7 +126,9 @@ export function fruchtermanReingoldImpl(
 
     t = cool(t);
 
-    cb?.(positions, i);
+    if (i === options.iterations - 1 || (i % options.skipUpdates) + 1 === 0) {
+      cb?.(positions, i);
+    }
   }
 
   return positions;

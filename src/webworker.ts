@@ -14,6 +14,7 @@ export interface ClientDataMessage {
   action: WorkerAction.DATA;
   data: {
     order: number;
+    assign: boolean;
     EdgeMatrix: ArrayBuffer;
     options: FruchtermanReingoldLayoutOptions;
   };
@@ -76,27 +77,31 @@ export function workerFn(): void {
         type: 'RUNNING',
       } as WorkerMessage);
 
-      const { order, EdgeMatrix, options } = event.data.data;
+      const { order, assign, EdgeMatrix, options } = event.data.data;
+
+      const updateCb = assign
+        ? (layout: Float32Array, i: number) => {
+            // posting an transferable object (FLoar32Array.buffer) will transfer the ownership...
+            // the object is unusable for the worker afterwards... As the algorithm has to use the array again we have to send a copy
+            const positions = layout.slice();
+            ctx.postMessage(
+              {
+                type: 'DATA',
+                data: {
+                  positions: positions.buffer,
+                  i,
+                },
+              } as WorkerMessage,
+              [positions.buffer]
+            );
+          }
+        : undefined;
 
       const positions = fruchtermanReingoldImpl(
         order,
         new Float32Array(EdgeMatrix),
         options,
-        (layout, i) => {
-          // posting an transferable object (FLoar32Array.buffer) will transfer the ownership...
-          // the object is unusable for the worker afterwards... As the algorithm has to use the array again we have to send a copy
-          const positions = layout.slice();
-          ctx.postMessage(
-            {
-              type: 'DATA',
-              data: {
-                positions: positions.buffer,
-                i,
-              },
-            } as WorkerMessage,
-            [positions.buffer]
-          );
-        }
+        updateCb
       );
 
       ctx.postMessage(

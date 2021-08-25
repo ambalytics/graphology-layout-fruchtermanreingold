@@ -43,7 +43,7 @@ function genericFruchtermanReingoldLayout(
   const parsedOptions = parseOptions(options || {});
   const [EdgeMatrix, order, parseLayout] = parseGraph(
     graph,
-    parsedOptions.weightAttribute
+    options?.weightAttribute
   );
 
   const updateCb = assign
