@@ -1,6 +1,5 @@
 import Graph from 'graphology-types';
 import { isGraph } from 'graphology-utils';
-import { fruchtermanReingoldImpl } from './fruchterman-reingold';
 import {
   FruchtermanReingoldLayoutOptions,
   LayoutMapping,
@@ -48,12 +47,7 @@ function genericFruchtermanReingoldLayout(
     const xURL = window.URL || window.webkitURL;
 
     // Get code for worker and insert fruchtermanReingoldImpl
-    const code = workerFn
-      .toString()
-      .replace(
-        /[^\n]*\/\/\s*<%= fruchtermanReingoldImpl %>/,
-        fruchtermanReingoldImpl.toString()
-      );
+    const code = workerFn.toString();
     const objectUrl = xURL.createObjectURL(
       new Blob(['(' + code + ').call(this);'], { type: 'text/javascript' })
     );

@@ -65,7 +65,7 @@ export type WorkerMessage =
 // *
 
 export function workerFn(): void {
-  // fruchtermanReingoldImpl and will be inserted here on runtime (as webworker cannot load it)
+  // fruchtermanReingoldImpl and will be inserted here on build (as webworker cannot load it)
   const fruchtermanReingoldImpl = origImpl; // <%= fruchtermanReingoldImpl %>
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
