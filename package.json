@@ -7,7 +7,8 @@
     "lint": "eslint .",
     "prettier:check": "prettier --check .",
     "prettier:write": "prettier --write .",
-    "build": "tsc",
+    "prepareWebWorker": "node ./scripts/prepareWebworker.js",
+    "build": "tsc && npm run prepareWebWorker",
     "watch": "tsc --watch",
     "clean": "rm *js *.d.ts",
     "semantic-release": "semantic-release"
